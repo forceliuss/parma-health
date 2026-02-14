@@ -5,7 +5,10 @@ from parma_health.anonymizer import (
     AnonymizerConfig,
     AnonymizationRule
 )
-from parma_health.primitives import mask_value
+from parma_health.primitives import (
+    mask_value,
+    pseudonymize_value
+)
 
 
 @pytest.fixture
@@ -92,3 +95,17 @@ def test_mask_rule_custom_salt(sample_df):
     assert result['name'][0] == expected_hash
     # Ensure it's different from default salt
     assert result['name'][0] != mask_value("Alice", salt="default_salt")
+
+
+def test_pseudonymize_rule(sample_df):
+    """Verify 'pseudonymize' action uses hashing logic."""
+    config = AnonymizerConfig(rules=[
+        AnonymizationRule(field='name', action='pseudonymize')
+    ])
+    engine = Anonymizer(config)
+
+    result = engine.process_chunk(sample_df)
+
+    expected_hash = pseudonymize_value("Alice", salt="default_salt")
+    assert result['name'][0] == expected_hash
+    assert result['age'].equals(sample_df['age'])
